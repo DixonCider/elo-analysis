@@ -2,12 +2,13 @@ from random import *
 import math
 import matplotlib.pyplot as plt
 
-INTRAPLAYER_SIGMA = 100
-INTERPLAYER_SIGMA = 10
+POPULATION = 50
+INTRAPLAYER_SIGMA = 10
+INTERPLAYER_SIGMA = 30
 K = 16
 INIT_ELO = 1500
 
-ROUNDS = 1000000
+ROUNDS = 100000
 
 class Player(object):
     """docstring for Player"""
@@ -64,7 +65,7 @@ def find_match(player_list):
 
 
 def main():
-    player_list = [Player(i, normalvariate(1000, INTERPLAYER_SIGMA), INIT_ELO) for i in range(10)]
+    player_list = [Player(i, normalvariate(1000, INTERPLAYER_SIGMA), INIT_ELO) for i in range(POPULATION)]
 
 
     for i in range(ROUNDS):
@@ -83,11 +84,16 @@ def main():
         print('strength={:4.2f}, elo={:4.2f}, win={:2d}, lose={:2d}'\
             .format(player.strength, player.elo, player.win, player.lose))
 
-    # plot
+    # plot data
     for player in player_list:
         plt.plot(player.elo_record)
         plt.annotate(round(player.strength), xy=(ROUNDS, player.elo_record[-1]))
 
+    # plot label & title.
+    params = 'population:{}, σ-inter:{}, σ-intra:{}'.format(POPULATION, INTERPLAYER_SIGMA, INTRAPLAYER_SIGMA)
+    plt.title(params)
+    plt.xlabel('rounds')
+    plt.ylabel('elo')
     plt.show()
 
 
