@@ -2,9 +2,9 @@ from random import *
 import math
 import matplotlib.pyplot as plt
 
-POPULATION = 50
+POPULATION = 30
 INTRAPLAYER_SIGMA = 10
-INTERPLAYER_SIGMA = 30
+INTERPLAYER_SIGMA = 20
 K = 16
 INIT_ELO = 1500
 
@@ -63,6 +63,25 @@ def find_match(player_list):
 
     return (player1, player2)
 
+def calc_theoretical_elo_diff(player1, player2):
+    """
+    Returns player1_theoretical_elo - player2_theoretical_elo
+    """
+    def normal_cdf(x, mean, sigma):
+        return 0.5 * (1 + math.erf( (x-mean)/(sigma * 1.41421356237) ))
+    
+    # Z = X - Y
+    # X : (random variable) player1 strength.
+    # Y : (random variable) player2 strength.
+    z_mean = player1.strength - player2.strength
+    z_sigma = math.sqrt(2*INTRAPLAYER_SIGMA**2)
+    
+    # P(Z < 0)
+    p2_winrate = normal_cdf(0, z_mean, z_sigma)
+    # P(Z > 0) = 1 - P(Z < 0)
+    p1_winrate = 1 - p2_winrate 
+
+    return (math.log(p1_winrate, 10) - math.log(p2_winrate, 10)) * 400
 
 def main():
     player_list = [Player(i, normalvariate(1000, INTERPLAYER_SIGMA), INIT_ELO) for i in range(POPULATION)]
@@ -94,8 +113,14 @@ def main():
     plt.title(params)
     plt.xlabel('rounds')
     plt.ylabel('elo')
-    plt.show()
 
+
+    ## test diff
+    print('#' * 20)
+    print('player0-player1={}, theoretical={}'.format(player_list[0].elo - player_list[1].elo,\
+     calc_theoretical_elo_diff(player_list[0], player_list[1])))
+
+    plt.show()
 
 if __name__ == '__main__':
     main()
