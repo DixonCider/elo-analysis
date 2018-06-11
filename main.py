@@ -130,6 +130,7 @@ def get_two_players_elo_diff_pmf(p1_strength, p2_strength):
     upper = 500
     transfer_matrix = np.zeros((2 * upper, 2 * upper))
     p1_theoretical_win_rate, p2_theoretical_win_rate = calc_theoretical_win_rate(player1, player2) 
+    print(p1_theoretical_win_rate, p2_theoretical_win_rate)
     # Build transfer matrix.
     for i in range(-upper, upper):
         p1_expected_win_rate, p2_expected_win_rate = get_expected_winrate_given_elo_diff(i)
@@ -205,11 +206,13 @@ def main():
 
     plt.show()
     '''
-    p1_strength = 100
+    p1_strength = 110
     p2_strength = 100
     pmf = get_two_players_elo_diff_pmf(p1_strength, p2_strength)
-    plt.plot(pmf)
-    plt.axis([-1, len(pmf), 0, max(pmf)])
+    # print(len(pmf))
+    x_values = np.linspace(-len(pmf)/2, len(pmf)/2, len(pmf))
+    plt.plot(x_values, pmf)
+    plt.axis([min(x_values), max(x_values), 0, max(pmf)])
     plt.xlabel('elo_diff')
     plt.ylabel('probabiltiy')
     plt.show()
