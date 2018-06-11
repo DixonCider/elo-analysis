@@ -34,6 +34,12 @@ class Player(object):
         averaging_range = math.floor(last_n_percent * len(self.elo_record))
         return np.average(self.elo_record[averaging_range:]) 
 
+    def get_max_elo(self):
+        '''
+        Return max elo ever achieved by player.
+        '''
+        return max(self.elo_record)
+
 def update_elo(winner, loser, tie=False):
     Qa = pow(10, winner.elo/400)
     Qb = pow(10, loser.elo/400)
@@ -68,10 +74,14 @@ def find_match(player_list):
 
     return (player1, player2)
 
-def calc_theoretical_elo_diff(player1, player2):
-    """
-    Returns player1_theoretical_elo - player2_theoretical_elo
-    """
+def get_expected_winrate_given_elo_diff(elo_diff):
+    # elo_diff = p1_elo = p2_elo
+    p1_winrate = (1 + 10**(-elo_diff/400))**-1
+    p2_winrate = (1 + 10**(elo_diff/400))**-1
+    return p1_winrate, p2_winrate
+
+def calc_theoretical_win_rate(player1, player2):
+    
     def normal_cdf(x, mean, sigma):
         return 0.5 * (1 + math.erf( (x-mean)/(sigma * math.sqrt(2)) ))
     
@@ -86,6 +96,13 @@ def calc_theoretical_elo_diff(player1, player2):
     # P(Z > 0) = 1 - P(Z < 0)
     p1_winrate = 1 - p2_winrate 
 
+    return p1_winrate, p2_winrate
+
+def calc_theoretical_elo_diff(player1, player2):
+    """
+    Returns player1_theoretical_elo - player2_theoretical_elo
+    """
+    p1_winrate, p2_winrate = calc_theoretical_win_rate(player1, player2)
     return (math.log(p1_winrate, 10) - math.log(p2_winrate, 10)) * 400
 
 def get_theoretical_elo(player, player_list):
@@ -98,12 +115,56 @@ def get_theoretical_elo(player, player_list):
             continue
         elo_diff_sum += calc_theoretical_elo_diff(player, opponent)
 
-    average_elo_diff_with_player = float(elo_diff_sum)/N
-    average_elo = float(sum(player.elo for player in player_list))/N
+    average_elo_diff_with_player = float(elo_diff_sum)/(N-1) # subtract self
+    average_elo = float(sum(p.elo for p in player_list) - player.elo)/(N-1)
 
     return average_elo + average_elo_diff_with_player
 
+def get_two_players_elo_diff_pmf(p1_strength, p2_strength):
+    '''
+    Returns pmf of p1_elo - p2_elo
+    '''
+    player1 = Player(0, p1_strength, p1_strength)
+    player2 = Player(1, p2_strength, p2_strength)
+
+    upper = 500
+    transfer_matrix = np.zeros((2 * upper, 2 * upper))
+    p1_theoretical_win_rate, p2_theoretical_win_rate = calc_theoretical_win_rate(player1, player2) 
+    # Build transfer matrix.
+    for i in range(-upper, upper):
+        p1_expected_win_rate, p2_expected_win_rate = get_expected_winrate_given_elo_diff(i)
+        print(p1_expected_win_rate, p2_expected_win_rate)
+        # Win case.
+        p1_win_elo_diff = math.floor(i + 2 * K * p2_expected_win_rate)
+        if p1_win_elo_diff >= upper:
+            transfer_matrix[2 * upper-1][i] = p1_theoretical_win_rate
+        else:
+            transfer_matrix[upper + p1_win_elo_diff][i] = p1_theoretical_win_rate
+        # Lose case.
+        p1_lose_elo_diff = math.floor(i - 2 * K * p1_expected_win_rate)
+        if p1_lose_elo_diff < -upper:
+            transfer_matrix[0][i] = p2_theoretical_win_rate
+        else:
+            transfer_matrix[upper + p1_lose_elo_diff][i] = p2_theoretical_win_rate
+    # Find pmf of elo_diff.
+    elo_diff_pmf = np.zeros(2 * upper)
+    elo_diff_pmf[upper] = 1 # intialize by giving elo_diff = 0 have probability 1
+    # Iterate for N rounds.
+    N = 10000
+    for i in range(N):
+        elo_diff_pmf = transfer_matrix.dot(elo_diff_pmf)
+    '''
+    print(sum(elo_diff_pmf))
+    elo_diff_mean = 0
+    for i in range(len(elo_diff_pmf)):
+        elo_diff_mean += i * elo_diff_pmf[i]
+    print(elo_diff_mean)
+    print(get_theoretical_elo(player1, [player1, player2]))
+    '''
+    return elo_diff_pmf
+
 def main():
+    '''
     player_list = [Player(i, normalvariate(1000, INTERPLAYER_SIGMA), INIT_ELO) for i in range(POPULATION)]
 
 
@@ -139,9 +200,18 @@ def main():
     print('#' * 20)
     print('player0-player1={}, theoretical={}'.format(player_list[0].get_average_elo(0.1) - player_list[1].get_average_elo(0.1),\
      calc_theoretical_elo_diff(player_list[0], player_list[1])))
-    print('player0.elo={}, theoretical={}'.format(player_list[0].elo,\
+    print('player0.elo={}, theoretical={}'.format(player_list[0].get_average_elo(0.05),\
      get_theoretical_elo(player_list[0], player_list)))
 
+    plt.show()
+    '''
+    p1_strength = 100
+    p2_strength = 100
+    pmf = get_two_players_elo_diff_pmf(p1_strength, p2_strength)
+    plt.plot(pmf)
+    plt.axis([-1, len(pmf), 0, max(pmf)])
+    plt.xlabel('elo_diff')
+    plt.ylabel('probabiltiy')
     plt.show()
 
 if __name__ == '__main__':
