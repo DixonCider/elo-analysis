@@ -138,22 +138,23 @@ def get_two_players_elo_diff_pmf(p1_strength, p2_strength):
         # Win case.
         p1_win_elo_diff = math.floor(i + 2 * K * p2_expected_win_rate)
         if p1_win_elo_diff >= upper:
-            transfer_matrix[2 * upper-1][i] = p1_theoretical_win_rate
+            transfer_matrix[2 * upper-1][i+upper] = p1_theoretical_win_rate
         else:
-            transfer_matrix[upper + p1_win_elo_diff][i] = p1_theoretical_win_rate
+            transfer_matrix[upper + p1_win_elo_diff][i+upper] = p1_theoretical_win_rate
         # Lose case.
         p1_lose_elo_diff = math.floor(i - 2 * K * p1_expected_win_rate)
         if p1_lose_elo_diff < -upper:
-            transfer_matrix[0][i] = p2_theoretical_win_rate
+            transfer_matrix[0][i+upper] = p2_theoretical_win_rate
         else:
-            transfer_matrix[upper + p1_lose_elo_diff][i] = p2_theoretical_win_rate
+            transfer_matrix[upper + p1_lose_elo_diff][i+upper] = p2_theoretical_win_rate
     # Find pmf of elo_diff.
     elo_diff_pmf = np.zeros(2 * upper)
     elo_diff_pmf[upper] = 1 # intialize by giving elo_diff = 0 have probability 1
     # Iterate for N rounds.
     N = 10000
-    for i in range(N):
-        elo_diff_pmf = transfer_matrix.dot(elo_diff_pmf)
+    np.linalg.matrix_power(transfer_matrix, N)
+    elo_diff_pmf = transfer_matrix.dot(elo_diff_pmf)
+    # print(np.linalg.eig(transfer_matrix))
     '''
     print(sum(elo_diff_pmf))
     elo_diff_mean = 0
