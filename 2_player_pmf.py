@@ -4,11 +4,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 from itertools import groupby
 
-K = 30
+K = 800 / np.log(10)
 INIT_ELO = 1000
 REAL_ELO = 1030
 
-ROUNDS = 30
+ROUNDS = 100
 
 MAX_ENTRIES = 100000
 RESOLUTION = 0.1
@@ -53,7 +53,7 @@ def main():
       if len(elo_pmf) > MAX_ENTRIES:
         elo_pmf = merge_close(elo_pmf)
       avg_var.append(weighted_avg_var(*zip(*elo_pmf)))
-      print("round {} done; {} entries left; (avg, var)={}".format(i+1, len(elo_pmf), avg_var[-1]))
+      # print("round {} done; {} entries left; (avg, var)={}".format(i+1, len(elo_pmf), avg_var[-1]))
 
     print("plotting...")
 
@@ -63,14 +63,16 @@ def main():
     params = 'pmf after {} rounds; real_elo:{}, K:{}'.format(ROUNDS, REAL_ELO, K)
     plt.title(params)
     plt.hist(x, weights=y, bins=range(int(min(x)), int(max(x))+1))
-    plt.show(block=False)
+    plt.show()
 
     # plot history of average and variance
+    '''
     plt.figure(2)
     avg, var = zip(*avg_var)
     plt.errorbar(range(ROUNDS), avg, np.sqrt(var))
     plt.title('average elo over rounds')
     plt.show()
+    '''
 
 
 

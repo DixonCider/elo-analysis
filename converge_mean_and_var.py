@@ -5,13 +5,13 @@ import numpy as np
 from functools import reduce
 import sys
 
-POPULATION = 10
+POPULATION = 2
 INTRAPLAYER_SIGMA = 10
 INTERPLAYER_SIGMA = 20
-K = 16
+K = 800 / np.log(10)
 INIT_ELO = 1500
 
-ROUNDS = 100000
+ROUNDS = 1000000
 
 class Player(object):
     """docstring for Player"""
@@ -230,7 +230,7 @@ def main():
         player.elo_record = []
         assert len(player.elo_record) == 0
 
-    for i in range(100000):
+    for i in range(ROUNDS):
         battle(player_list)
 
     for player in player_list:
